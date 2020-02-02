@@ -1,0 +1,11 @@
+
+{
+  "boardSize": 5,
+  "shape": "Triangle",
+  "startPositions": ["(2,2)" ,"(4,4)"],
+  "learningRateCritic": 0.01,
+  "learningRateActor": 0.01,
+  "discountRate": 0.01,
+  "traceDecay": 0.99,
+  "episodes": 100
+}
