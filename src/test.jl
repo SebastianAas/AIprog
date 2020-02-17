@@ -21,6 +21,6 @@ animation = @animate for i in (1:4)
     plot!(i,i)
 end
 
-gif(animation, "C:\\Users\\sebas\\dev\\AIprog\\src\\animations\\plot1.gif" ,fps=15)
+gif(animation, "C:\\Users\\sebas\\dev\\AIprog\\src\\animations\\plot2.gif" ,fps=15)
 """
 

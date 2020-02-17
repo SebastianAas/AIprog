@@ -5,7 +5,7 @@ board:
 - Date: 2020-01-20
 =#
 
-using Plots, PyPlot, NaNMath
+using Plots, PyPlot, NaNMath, ProgressMeter
 
 abstract type Shape end
 struct Diamond <: Shape end
@@ -23,6 +23,7 @@ struct Move
     to::Tuple{Int,Int}
 end
 
+
 function generateBoard(shape::String, size::Int, startPositionArray)
     grid = fill(NaN, size,size)
     for i in (1:size)
@@ -38,12 +39,12 @@ function generateBoard(shape::String, size::Int, startPositionArray)
     legalMoves = if (shape == "Triangle")
         [(0,1), (0,-1), (1,0), (-1,0), (1,1), (-1,-1)]
     else
-        [(0,1), (1,0), (-1,-1), (1,1), (0, -1), (-1,0)]
+        [(0,1), (1,0), (-1,1), (1,-1), (0, -1), (-1,0)]
     end
     return Board(shape, size, grid, legalMoves)
 end
 
-function getAvailableMoves(board::Board)
+function getAvailableMoves(board::Board)::Array{Move}
     availableMoves = []
     for i in (1:board.size)
         for j in (1:board.size)
@@ -60,10 +61,10 @@ function getAvailableMoves(board::Board)
             end
         end
     end
-    availableMoves
+    return availableMoves
 end
 
-function getAvailableMoves(board::Board, position::Tuple{Int,Int})
+function getAvailableMoves(board::Board, position::Tuple{Int,Int})::Array{Move}
     i,j = position
     availableMoves = []
     for move in board.legalMoves
@@ -80,10 +81,23 @@ function getAvailableMoves(board::Board, position::Tuple{Int,Int})
             continue
         end
     end
-    availableMoves
+    return availableMoves
 end
 
-function notDone(board::Board)
+function getReward(board::Board)::Int
+    if isDone(board)
+        return r = 10
+        println("Finished Succesfully")
+    else
+        return r = 0
+    end
+end
+
+function isDone(board::Board)::Bool
+    return NaNMath.sum(board.grid) == 1
+end
+
+function notDone(board::Board)::Bool
     return NaNMath.sum(board.grid) != 1
 end
 
@@ -103,16 +117,25 @@ function secondNeighborEmpty(board::Board, move::Tuple{Int,Int}, i::Int, j::Int)
 end
 
 function executeMove!(board::Board, move::Move)
+    newBoard = deepcopy(board)
     Δx = move.to[1] - move.from[1]
     Δy = move.to[2] - move.from[2]
-    board.grid[move.from[1], move.from[2]] = 0
-    board.grid[move.from[1] + convert(Int,Δx/2), move.from[2] + convert(Int,Δy/2)] = 0
-    board.grid[move.to[1], move.to[2]] = 1
-    return board
+    newBoard.grid[move.from[1], move.from[2]] = 0
+    newBoard.grid[move.from[1] + convert(Int,Δx/2), move.from[2] + convert(Int,Δy/2)] = 0
+    newBoard.grid[move.to[1], move.to[2]] = 1
+    return newBoard
+end
+
+function getIndexMove(move::Move)
+    return (move.from, move.to)
 end
 
 function getState(board::Board)
     return board.grid
+end
+
+function getNumberOfRemainingPegs(board::Board)
+   return NaNMath.sum(board.grid)
 end
 
 
@@ -131,6 +154,7 @@ function printBoardTerminal(board::Board)
 end
 
 function printBoard(board::Board)
+    gr()
     if board.shape == "Triangle"
         printTriangleBoard(board)
     else
@@ -138,44 +162,42 @@ function printBoard(board::Board)
     end
 end
 
-
 function printTriangleBoard(board::Board)
-    pyplot()
     x, y, m, n = [], [], [], []
     for i in (1:board.size)
         for j in (1:board.size)
             if board.grid[i, j] == 1
-                push!(x, -i)
-                push!(y, j)
+               push!(x, -i)
+               push!(y, j + 1/2*(board.size - i))
             end
             if board.grid[i,j] == 0
                 push!(m, -i)
-                push!(n, j)
+                push!(n, j + 1/2*(board.size - i))
             end
         end
     end
-    plotEmptySpaces(m,n)
-    plotPins(x,y)
-    Plots.savefig("./animations/board.png")
+    plotEmptySpaces(n,m)
+    plotPins(y,x)
 end
 
 function printDiamondBoard(board::Board)
-    pyplot()
     x, y, m, n = [], [], [], []
-    gw = 2*size(board.grid,1) - 2
+    neighborgraph = []
+    gw = 2*board.size - 2
     for i in (1:board.size)
         for j in (1:board.size)
             if board.grid[i, j] == 1
                 push!(x, gw/2 - i + j)
                 push!(y, gw - (i + j))
             end
-            push!(m, gw/2 - i + j)
-            push!(n, gw - (i + j))
+            if board.grid[i,j] == 0
+                push!(m, gw/2 - i + j)
+                push!(n, gw - (i + j))
+            end
         end
     end
     plotEmptySpaces(m,n)
     plotPins(x,y)
-    Plots.savefig("./animations/board.png")
 end
 
 function plotEmptySpaces(x, y)
@@ -192,11 +214,21 @@ function plotPins(x, y)
         markersize = 16)
 end
 
+function plotNeighborGraphs(x,y)
+    Plots.plot!(x,y,
+    c= :grey)
+end
 
+function visualize(board::Board, actions::Array{Move}, startPositions, fps)
+    new_board = generateBoard(board.shape, board.size, startPositions)
+    animation = @animate for i in (1:length(actions) + 1)
+        try
+            printBoard(board)
+            board = executeMove!(board,actions[i])
+        catch
+            printBoard(board)
+        end
+    end
+    gif(animation, "C:\\Users\\sebas\\dev\\AIprog\\src\\animations\\animationDiamond.gif" ,fps=1)
+end
 
-#board = generateBoard("Triangle", 4, [(4,4)])
-#executeMove!(board, Move((2,2), (4,4)))
-#display(board.grid)
-#println(getAvailableMoves(board))
-#printBoardTerminal(board)
-#printBoard(board)
