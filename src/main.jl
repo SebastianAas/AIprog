@@ -18,7 +18,7 @@ layers = Config.layers
 episodes = Config.episodes
 ε = Config.greedyValueActor
 fps = Config.fps
-model = Chain(Dense(16,20,sigmoid), Dense(20,8,sigmoid), Dense(8,1,sigmoid))
+model = Chain(Dense(16,20,tanh), Dense(20,8,tanh), Dense(8,1))
 critic = Critic(
     DefaultDict(0),
     neuralNet ? DefaultDict(DefaultDict((0,0))) : DefaultDict(0),
@@ -61,7 +61,7 @@ function runEpisode(ε)
         end
         for (s,a) in currentEpisode
             if neuralNet
-                train!(critic, s, δ, α_c)
+                train!(critic, s, δ, α_c, true)
             else
                 critic.V[s] = critic.V[s] + α_c*δ*critic.e[s]
                 critic.e[s] = γ*λ*critic.e[s]
@@ -82,7 +82,7 @@ function main(episodes::Int, ε)
     remainingPegs = []
     states = []
     for i in (1:episodes)
-        ε *= 0.996
+        ε *= 0.99
         e,r,s = runEpisode(ε)
         push!(states, s)
         push!(remainingPegs, r)

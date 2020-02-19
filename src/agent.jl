@@ -70,11 +70,11 @@ function train!(agent::Critic, state, δ, α)
     loss(x, y) = Flux.mse(agent.model(x), y)
     ps = params(agent.model)
     opt = Descent(α)
-    train!(loss, ps, (state, δ), agent.e[state], δ, opt)
+    train!(loss, ps, (state, δ), agent.e[state], δ, α)
 end
 
 function train!(agent::Critic, state, δ, α, k)
-    updateWeights(agent, state, δ, α)
+    updateWeights!(agent, state, δ, α)
 end
 
 

@@ -21,10 +21,19 @@ mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
 function updateEligibility(e, gradient, xs, δ)
     for x in xs
         if length(e[x]) != gradient
-            e[x] = gradient[x]
+            e[x] = gradient[x]*δ
         else
-            e[x] += gradient[x]
+            e[x] += gradient[x]*δ
         end
+    end
+    return e
+end
+
+function updateEligibility(e, gradient)
+    if length(e) != gradient
+        e = gradient
+    else
+        e += gradient
     end
     return e
 end
@@ -36,20 +45,24 @@ function updateWeights!(agent, input, α, δ)
     loss = mse(pred, δ)
     totalLoss += loss
     Tracker.back!(loss)
-    for layer in agent.model.layers
+    for layer in agent.model.layers[1:end-1]
         agent.e[input][layer.W] = updateEligibility(agent.e[input][layer.W], layer.W.grad)
         agent.e[input][layer.b] = updateEligibility(agent.e[input][layer.b], layer.b.grad)
         if typeof(agent.e[input][layer.W]) == Tuple{Int64,Int64}
             println("E: ", agent.e[input][layer.W])
             break
         end
-        layer.W.data .+= α*δ*agent.e[input][layer.W]
-        layer.b.data .+= α*δ*agent.e[input][layer.b]
+        layer.W.data .+= α*δ*layer.W.grad
+        layer.b.data .+= α*layer.b.grad
         input = Tracker.data(layer(input))
         layer.W.grad .= 0.0
         layer.b.grad .= 0.0  
     end
     return Tracker.data(totalLoss)
+end
+
+function apply!(o::Descent, x, Δ)
+  Δ .*= o.eta
 end
 
 function update!(opt, x, x̄)
@@ -64,13 +77,13 @@ function update!(xs::Params, e, δ, α)
 end
 
 
-function train!(loss, ps, data, e, δ, opt)
+function train!(loss, ps, data, e, δ, α)
     ps = Params(ps)
     gs = Zygote.gradient(ps) do
-        loss(data)
+        loss(data...)
     end
-    e = updateEligibility(e, grad, ps, δ)
-    update!(opt, ps, grad)
+    e = updateEligibility(e, gs, ps, δ)
+    update!(ps, e, δ, α)
 end
 
 """

@@ -27,7 +27,7 @@ module Config
     learningRateActor = 0.5
     discountRate =  0.99
     traceDecay = 0.99
-    episodes = 2000
+    episodes = 1000
     greedyValueActor = 1
     fps = 1
 end
