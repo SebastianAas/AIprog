@@ -7,7 +7,7 @@ config:
 module Config
     export boardSize,
     shape,
-    startPosition,
+    startPositions,
     learningRateCritic,
     learningRateActor,
     discountRate,
@@ -21,13 +21,13 @@ module Config
     boardSize = 4
     shape = "Diamond"
     startPositions = [(3,2)]
-    layers = [16,20,10,1]
+    layers = [15,20,10,1]
     neuralNet = true
     learningRateCritic = 0.5
     learningRateActor = 0.5
     discountRate =  0.99
     traceDecay = 0.99
-    episodes = 1000
+    episodes = 2000
     greedyValueActor = 1
     fps = 1
 end

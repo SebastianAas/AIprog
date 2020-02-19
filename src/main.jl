@@ -1,9 +1,9 @@
-using DataStructures
+using DataStructures, Flux
 include("board.jl")
 include("agent.jl")
 include("environment.jl")
 include("config.jl")
-include("neuralnetwork.jl")
+include("neuralnet.jl")
 
 @info("Loading config variables...")
 shape = Config.shape
@@ -18,10 +18,11 @@ layers = Config.layers
 episodes = Config.episodes
 ε = Config.greedyValueActor
 fps = Config.fps
+model = Chain(Dense(16,20,sigmoid), Dense(20,8,sigmoid), Dense(8,1,sigmoid))
 critic = Critic(
     DefaultDict(0),
     neuralNet ? DefaultDict(DefaultDict((0,0))) : DefaultDict(0),
-    Chain(initLayers(layers))
+    model
 )
 actor =  Actor(DefaultDict(DefaultDict(0)), DefaultDict(0))
 
@@ -31,6 +32,7 @@ function runEpisode(ε)
     env = Environment(generateBoard(shape, boardSize, startPositions))
     s = getState(env)
     currentEpisode = []
+    states = []
     executedMoves = Move[]
     possibleMoves = getLegalMoves(env)
     if length(possibleMoves) == 0
@@ -41,45 +43,52 @@ function runEpisode(ε)
     else
         a = getMove(actor, s, possibleMoves, ε)
     end
-    δ = 0
     push!(currentEpisode, (s,a))
     while length(getLegalMoves(env)) != 0
         new_s, r = move!(env, a)
         push!(executedMoves, a)
         possibleMoves = getLegalMoves(env)
         new_a = getMove(actor, new_s, possibleMoves, ε)
-        actor.e[new_s, new_a] = 1
-        δ = r + γ*(neuralNet ? (critic.model(vec(new_s)) - critic.model(vec(s)))[1] : critic.V[new_s] - critic.V[s])
+        actor.e[s,a] = 1
+        δ = neuralNet ? ((r+γ*critic.model(new_s)[1]) - critic.model(s)[1]) : ((r+γ*critic.V[new_s]) - critic.V[s])
+        if neuralNet
+            δ = Tracker.data(δ)
+        end
+        push!(states, (s, δ))
+        #println("TD ERROR: ", δ)
         if !neuralNet 
             critic.e[s] = 1
         end
         for (s,a) in currentEpisode
             if neuralNet
-                updateWeights!(critic, vec(s), α_c, δ)
+                train!(critic, s, δ, α_c)
             else
                 critic.V[s] = critic.V[s] + α_c*δ*critic.e[s]
-                critic.e[s] = γ*λ*actor.e[s]
+                critic.e[s] = γ*λ*critic.e[s]
             end
             actor.Π[s][a] = actor.Π[s][a] + α_a*δ*actor.e[s,a]
+            #println("Elgibility actor: ", actor.e[s,a])
             actor.e[s,a] = γ*λ*actor.e[s,a]
         end
         s = new_s
         a = new_a
         push!(currentEpisode, (new_s,new_a))
     end
-    return executedMoves, getRemainingPegs(env), mse(critic.model(vec(s)), δ)
+    return executedMoves, getRemainingPegs(env), states
 end
 
 function main(episodes::Int, ε)
     prog = Progress(episodes,1)
     remainingPegs = []
-    loss = []
+    states = []
     for i in (1:episodes)
-        ε *= 0.99
-        e,r, l= runEpisode(ε)
+        ε *= 0.996
+        e,r,s = runEpisode(ε)
+        push!(states, s)
         push!(remainingPegs, r)
-        push!(loss,l)
+        #println("States: ", s)
         next!(prog)
+        #println(states)
     end
     executedMoves, r = runEpisode(ε)
     println("ε: ", ε)
@@ -87,8 +96,6 @@ function main(episodes::Int, ε)
     visualize(board,executedMoves, startPositions, fps)
     Plots.plot([i for i in (1:episodes)], remainingPegs, seriestype= :scatter, title= "Remaining Pegs")
     Plots.savefig("C:\\Users\\sebas\\dev\\AIprog\\src\\animations\\remainingPegsDiamond.png")
-    Plots.plot([i for i in (1:episodes)], loss, title= "Loss")
-    Plots.savefig("C:\\Users\\sebas\\dev\\AIprog\\src\\animations\\loss.png")
 end
 
 main(episodes, ε)

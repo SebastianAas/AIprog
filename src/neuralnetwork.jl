@@ -9,7 +9,7 @@ using Knet, Random, IterTools
 
 
 # Set random seed for replicability
-Random.seed!(9);
+#Random.seed!(9);
 
 #Loss function
 mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
@@ -26,10 +26,10 @@ struct Chain; layers end
 (c::Chain)(x,y) = mse(c(x),y)
 
 #Function for finding the gradient of a layer
-lossgradient = gradloss(mse)
+lossgradient = grad(mse)
 
-function updateEligibility(e, gradient, layer, δ)
-    if length(e) != length(layer.w)
+function updateEligibility(e, gradient, w, δ)
+    if length(e) != length(w)
         e = gradient
     else
         e += gradient
@@ -46,10 +46,11 @@ end
 
 function updateWeights!(agent, input, α, δ)
     for layer in agent.model.layers
-        for (w,b) in params(layer)
-        grad = lossgradient(layer(input), δ)
-        agent.e[input][layer] = updateEligibility(agent.e[input][layer],grad, layer, δ)
-        updateWeights!(layer, α, δ, agent.e[input][layer]) 
+        g = lossgradient(layer,input, δ)
+        println(g)
+        println(length(g))
+        #agent.e[input][layer] = updateEligibility(agent.e[input][layer],grad, layer, δ)
+        #updateWeights!(layer, α, δ, agent.e[input][layer])
         input = layer(input)  
     end
 end

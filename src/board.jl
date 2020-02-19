@@ -87,7 +87,8 @@ end
 function getReward(board::Board)::Int
     if isDone(board)
         return r = 10
-        println("Finished Succesfully")
+    elseif length(getAvailableMoves(board)) == 0
+        return r = 0
     else
         return r = 0
     end
@@ -131,7 +132,20 @@ function getIndexMove(move::Move)
 end
 
 function getState(board::Board)
-    return board.grid
+    s = (board.size * (board.size+1))/2
+    state = zeros(convert(Int,s))
+    count = 1
+    if board.shape == "Triangle"
+        for i in (1:board.size)
+            for j in (1:i)
+                state[count] = board.grid[i,j]
+                count += 1
+            end
+        end
+    else
+        state = board.grid
+    end
+    return vec(state)
 end
 
 function getNumberOfRemainingPegs(board::Board)
