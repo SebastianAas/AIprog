@@ -88,7 +88,7 @@ function getReward(board::Board)::Int
     if isDone(board)
         return r = 10
     elseif length(getAvailableMoves(board)) == 0
-        return r = 0
+        return r = -1
     else
         return r = 0
     end

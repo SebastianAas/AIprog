@@ -47,10 +47,10 @@ end
 function updateWeights!(agent, input, α, δ)
     for layer in agent.model.layers
         g = lossgradient(layer,input, δ)
-        println(g)
-        println(length(g))
-        #agent.e[input][layer] = updateEligibility(agent.e[input][layer],grad, layer, δ)
-        #updateWeights!(layer, α, δ, agent.e[input][layer])
+        #println(g)
+        #println(length(g))
+        agent.e[input][layer] = updateEligibility(agent.e[input][layer],grad, layer, δ)
+        updateWeights!(layer, α, δ, agent.e[input][layer])
         input = layer(input)  
     end
 end

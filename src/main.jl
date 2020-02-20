@@ -18,7 +18,7 @@ layers = Config.layers
 episodes = Config.episodes
 ε = Config.greedyValueActor
 fps = Config.fps
-model = Chain(Dense(16,20,sigmoid), Dense(20,8,sigmoid), Dense(8,1,sigmoid))
+model = Chain(Dense(16,10,sigmoid), Dense(10,5,sigmoid), Dense(5,1))
 critic = Critic(
     DefaultDict(0),
     neuralNet ? DefaultDict(DefaultDict((0,0))) : DefaultDict(0),
@@ -51,13 +51,12 @@ function runEpisode(ε)
         new_a = getMove(actor, new_s, possibleMoves, ε)
         actor.e[s,a] = 1
         δ = neuralNet ? ((r+γ*critic.model(new_s)[1]) - critic.model(s)[1]) : ((r+γ*critic.V[new_s]) - critic.V[s])
-        if neuralNet
-            δ = Tracker.data(δ)
-        end
         push!(states, (s, δ))
         #println("TD ERROR: ", δ)
         if !neuralNet 
             critic.e[s] = 1
+        else 
+            critic.e[s] = DefaultDict(0)
         end
         for (s,a) in currentEpisode
             if neuralNet
@@ -82,13 +81,11 @@ function main(episodes::Int, ε)
     remainingPegs = []
     states = []
     for i in (1:episodes)
-        ε *= 0.996
+        ε *= 0.99
         e,r,s = runEpisode(ε)
         push!(states, s)
         push!(remainingPegs, r)
-        #println("States: ", s)
         next!(prog)
-        #println(states)
     end
     executedMoves, r = runEpisode(ε)
     println("ε: ", ε)

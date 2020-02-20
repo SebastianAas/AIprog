@@ -55,17 +55,7 @@ function initLayers(layers)
     push!(l,Dense(layers[length(layers)-1], layers[end]))
     return l
 end
-"""
-l = Config.layers
-critic = Critic(DefaultDict(0), DefaultDict(DefaultDict((0,0))), Chain(initLayers(l)))
-#for p in params(critic.model.layers[1]))
 
-m = Chain(
-    Dense(16,10,relu),
-    Dense(10,5,relu),
-    Dense(5,1)
-)
-"""
 function train!(agent::Critic, state, δ, α)
     loss(x, y) = Flux.mse(agent.model(x), y)
     ps = params(agent.model)

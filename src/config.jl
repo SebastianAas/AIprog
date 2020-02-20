@@ -23,11 +23,11 @@ module Config
     startPositions = [(3,2)]
     layers = [15,20,10,1]
     neuralNet = true
-    learningRateCritic = 0.5
+    learningRateCritic = 0.01
     learningRateActor = 0.5
     discountRate =  0.99
     traceDecay = 0.99
-    episodes = 2000
+    episodes = 1000
     greedyValueActor = 1
     fps = 1
 end

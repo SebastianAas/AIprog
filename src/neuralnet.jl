@@ -11,14 +11,14 @@ import Zygote: Params, gradient
 
 
 # Set random seed for replicability
-Random.seed!(9);
+#Random.seed!(9);
 
 #Loss function
 mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
 
-#Chain(layers) = new Chain(layers)
+#Chain(layers::Array{Dense}) = new Chain(layers)
 
-function updateEligibility(e, gradient, xs, δ)
+function updateEligibility(e, gradient, xs)
     for x in xs
         if length(e[x]) != gradient
             e[x] = gradient[x]
@@ -52,10 +52,6 @@ function updateWeights!(agent, input, α, δ)
     return Tracker.data(totalLoss)
 end
 
-function update!(opt, x, x̄)
-  x .-= apply!(opt, x, x̄)
-end
-
 function update!(xs::Params, e, δ, α)
   for x in xs
     e[x] == nothing && continue
@@ -67,29 +63,15 @@ end
 function train!(loss, ps, data, e, δ, opt)
     ps = Params(ps)
     gs = Zygote.gradient(ps) do
-        loss(data)
+        loss(data...)
     end
-    e = updateEligibility(e, grad, ps, δ)
-    update!(opt, ps, grad)
+    for p in ps
+        if length(e[p]) != length(gs[p])
+            continue
+        end
+        gs[p] .+= e[p]
+    end
+    e = updateEligibility(e, gs, ps)    
+    Flux.Optimise.update!(opt, ps, gs)
 end
 
-"""
-m1 = Chain(
-    Dense(16,10,relu),
-    Dense(10,5,relu),
-    Dense(5,1)
-)
-
-xs = [rand(784), rand(784), rand(784)]
-ys = [rand( 10), rand( 10), rand( 10)]
-data = zip(xs, ys)
-
-m = Chain(
-  Dense(784, 32, σ),
-  Dense(32, 10), softmax)
-
-loss(x, y) = Flux.mse(m1(x), y)
-ps = params(m1)
-
-train!(loss, ps, [(rand(16), 0.5)], 0.1, 0.1, 0.1)
-"""
