@@ -63,10 +63,6 @@ function train!(agent::Critic, state, δ, α)
     train!(loss, ps, (state, δ), agent.e[state], δ, opt)
 end
 
-function train!(agent::Critic, state, δ, α, k)
-    updateWeights(agent, state, δ, α)
-end
-
 
 
 

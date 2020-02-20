@@ -32,7 +32,6 @@ function runEpisode(ε)
     env = Environment(generateBoard(shape, boardSize, startPositions))
     s = getState(env)
     currentEpisode = []
-    states = []
     executedMoves = Move[]
     possibleMoves = getLegalMoves(env)
     if length(possibleMoves) == 0
@@ -51,13 +50,7 @@ function runEpisode(ε)
         new_a = getMove(actor, new_s, possibleMoves, ε)
         actor.e[s,a] = 1
         δ = neuralNet ? ((r+γ*critic.model(new_s)[1]) - critic.model(s)[1]) : ((r+γ*critic.V[new_s]) - critic.V[s])
-        push!(states, (s, δ))
-        #println("TD ERROR: ", δ)
-        if !neuralNet 
-            critic.e[s] = 1
-        else 
-            critic.e[s] = DefaultDict(0)
-        end
+        critic.e[s] = neuralNet ? DefaultDict(0) : 1
         for (s,a) in currentEpisode
             if neuralNet
                 train!(critic, s, δ, α_c)
@@ -66,24 +59,21 @@ function runEpisode(ε)
                 critic.e[s] = γ*λ*critic.e[s]
             end
             actor.Π[s][a] = actor.Π[s][a] + α_a*δ*actor.e[s,a]
-            #println("Elgibility actor: ", actor.e[s,a])
             actor.e[s,a] = γ*λ*actor.e[s,a]
         end
         s = new_s
         a = new_a
         push!(currentEpisode, (new_s,new_a))
     end
-    return executedMoves, getRemainingPegs(env), states
+    return executedMoves, getRemainingPegs(env)
 end
 
 function main(episodes::Int, ε)
     prog = Progress(episodes,1)
     remainingPegs = []
-    states = []
     for i in (1:episodes)
         ε *= 0.99
-        e,r,s = runEpisode(ε)
-        push!(states, s)
+        e,r = runEpisode(ε)
         push!(remainingPegs, r)
         next!(prog)
     end

@@ -37,6 +37,28 @@ function updateEligibility(e, gradient, w, δ)
     return e
 end
 
+function updateWeights!(agent, input, α, δ)
+    totalLoss = 0
+    pred = agent.model(input)
+    loss = mse(pred, δ)
+    totalLoss += loss
+    Tracker.back!(loss)
+    for layer in agent.model.layers
+        agent.e[input][layer.W] = updateEligibility(agent.e[input][layer.W], layer.W.grad)
+        agent.e[input][layer.b] = updateEligibility(agent.e[input][layer.b], layer.b.grad)
+        if typeof(agent.e[input][layer.W]) == Tuple{Int64,Int64}
+            println("E: ", agent.e[input][layer.W])
+            break
+        end
+        layer.W.data .+= α*δ*agent.e[input][layer.W]
+        layer.b.data .+= α*δ*agent.e[input][layer.b]
+        input = Tracker.data(layer(input))
+        layer.W.grad .= 0.0
+        layer.b.grad .= 0.0  
+    end
+    return Tracker.data(totalLoss)
+end
+
 function updateWeights!(layer::Dense, α, δ, e)
     for i in (1:length(e[1]))
         layer.w[i,:] .+= α*δ*e[1][i]
