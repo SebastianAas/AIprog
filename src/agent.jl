@@ -50,7 +50,7 @@ end
 function initLayers(layers)
     l = []
     for i in (1:length(layers)-2)
-        push!(l, Dense(layers[i], layers[i+1], NNlib.relu))
+        push!(l, Dense(layers[i], layers[i+1], sigmoid))
     end
     push!(l,Dense(layers[length(layers)-1], layers[end]))
     return l

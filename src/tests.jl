@@ -9,9 +9,6 @@ include("board.jl")
 include("environment.jl")
 include("config.jl")
 
-println("StartPos: ", Config.startPositions)
-println("")
-
 @testset "Check if find available moves method works" begin
     board = generateBoard("Triangle", 4, [(2,2)])
     @testset "Find empty second neighbor" begin

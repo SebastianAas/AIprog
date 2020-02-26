@@ -9,12 +9,8 @@ using Flux, Random, Zygote
 
 import Zygote: Params, gradient
 
-
 # Set random seed for replicability
 #Random.seed!(9);
-
-#Loss function
-mse(ŷ, y) = sum((ŷ .- y).^2) * 1 // length(y)
 
 function updateEligibility(e, gradient, xs)
     for x in xs
