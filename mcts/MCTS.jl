@@ -21,22 +21,31 @@ end
 
 
 struct Node
+    "Parent of the node"
     parent::Node
+
+    "The move taken from the parent to this node"
     move::Move
-    sum::Int
+    
+    "The score of the node"
+    score::Int
+
+    "The times this nodes has been visited"
     visits::Int
+
+    "The children of this node"
     children::Array{Node}
 end
 
 mutable struct MCTSTree
+    "The root node of the tree"
     root::Node
-    game::Game
     solver::MCTSSolver
     depth::Int
 end
 
 function resetSearch(tree::MCTSTree)
-    tree.root = Node(nothing)
+    tree.root = createNewNode(nothing, nothing)
 end
 
 
@@ -49,6 +58,13 @@ function search(tree::MCTSTree, solver::MCTSSolver)
 
     "Selection"
     node = selection(tree, tree.root)
+
+    if isFinished(solver.game)
+        return getOutcome(solver.game)
+    end
+
+    if isLeafNode(node)
+    end
 
 
     "Expansion"
@@ -123,6 +139,11 @@ createNewNode(parent, move) = Node(parent,move,0,0,Node[])
 updateNodeChildren(node, child) = push!(node.children, child)
 
 
+"""
+    evaluation(tree, node)
+
+Leaf evaluation: Rollout to a leaf node and calculate the score
+"""
 function evaluation(tree::MCTSTree, node::Node)
     score = nothing
 end

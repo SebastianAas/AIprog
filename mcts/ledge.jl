@@ -2,7 +2,14 @@ include("game.jl")
 
 mutable struct Ledge <: Game
 	"Initial board configuration"
-	board::Array{Int}
+    board::Array{Int}
+    function Ledge(board::Array{Int})
+        if 2 in board
+            new(board)
+        else
+            error("Board doesn't contain a gold coin")
+        end
+    end
 end
 
 struct LedgeMove <: Move
@@ -37,7 +44,10 @@ function executeMove!(game::Ledge, move::LedgeMove)
     game.board[move.to] = move.type
 end
 
+"Checks if the gold coin is one the ledge"
 isFinished(game::Ledge) = game.board[1] == 2
+
+getOutcome(game::Ledge) = nothing
 
 
         

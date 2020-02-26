@@ -5,7 +5,8 @@ mutable struct NIM <: Game
     N::Int
 
     "Maximum number of pieces a player can take on their turn"
-    K::Int
+	K::Int
+	NIM(N::Int,K::Int) = (N>K) ? new(N,K) : error("N needs to be larger than K")
 end
 
 struct NimMove <: Move
