@@ -9,9 +9,6 @@ struct MCTSSolver
     "Number of iterations"
     iterations::Int64
 
-    "Max time being used for simulation"
-    maxTime::Float64
-
     "Maximum rollout depth"
     depth::Int64
 
@@ -40,14 +37,17 @@ end
 mutable struct MCTSTree
     "The root node of the tree"
     root::Node
-    solver::MCTSSolver
     depth::Int
+end
+
+function initializeMCTSTree(depth::Int)::MCTSTree
+    root = creteNewNode(nothing, nothing)
+    return MCTSTree(root,depth)
 end
 
 function resetSearch(tree::MCTSTree)
     tree.root = createNewNode(nothing, nothing)
 end
-
 
 """
     search(tree,solver)
@@ -55,26 +55,32 @@ end
 Single MCTS search: Selection-Expansion-Evaluation-Backpropagation
 """
 function search(tree::MCTSTree, solver::MCTSSolver)
+    iterations = 0
+    while solver.iterations > iterations 
 
-    "Selection"
-    node = selection(tree, tree.root)
+        "Selection"
+        node = selection(tree, tree.root)
 
-    if isFinished(solver.game)
-        return getOutcome(solver.game)
+        if isFinished(solver.game)
+            return getOutcome(solver.game)
+        end
+
+        if isLeafNode(node)
+            return getOutcome(solver.game)
+        end
+
+
+        "Expansion"
+        expansion!(tree,node)
+
+        "Evaluation"
+        score = evaluation(tree,node)
+
+        "Backpropagation"
+        backpropagation!(tree,node,score)
+
+        iterations += 1
     end
-
-    if isLeafNode(node)
-    end
-
-
-    "Expansion"
-    expansion!(tree,node)
-
-    "Evaluation"
-    score = evaluation(tree,node)
-
-    "Backpropagation"
-    backpropagation!(tree,node,score)
 
 end
 
@@ -101,8 +107,8 @@ function selection(tree::MCTSTree,node::Node)::Node
 
     "Find the best child node / Find the best action"
     for child in parent.children
-        nodeValue = calculateNodeValue(parent,child)
-        if (bestNode == nothing || nodeValue >= bestNode)
+        nodeValue = calculateNodeUCT(parent,child)
+        if  (nodeValue >= bestValue)
             bestNode = child
             bestNodeValue = nodeValue
         end
@@ -114,7 +120,12 @@ end
 isLeafNode(node) = length(node.children) == 0
 notExplored(node) = node.visits == 0
 
-function calculateNodeValue(node)
+"""
+Calculate Node value based on UCB (Upper Confidence Bound)
+
+"""
+function calculateUCT(parent, child)
+    return child.score/child.visits + 2*sqrt(parent.visits/child.visits)
 end
 
 

@@ -1,11 +1,19 @@
+import Base.show
 include("game.jl")
 
 mutable struct Ledge <: Game
 	"Initial board configuration"
     board::Array{Int}
-    function Ledge(board::Array{Int})
+
+    "Array of executedMoves"
+    executedMoves::Array{Move}
+
+    "Starting player"
+    player::Int
+
+    function Ledge(board::Array{Int}, player)
         if 2 in board
-            new(board)
+            new(board, [], player)
         else
             error("Board doesn't contain a gold coin")
         end
@@ -41,13 +49,31 @@ end
 
 function executeMove!(game::Ledge, move::LedgeMove)
     game.board[move.from] = 0
-    game.board[move.to] = move.type
+    if !(move.to == -1)
+        game.board[move.to] = move.type
+    end
+    push!(game.executedMoves, move)
 end
 
 "Checks if the gold coin is one the ledge"
-isFinished(game::Ledge) = game.board[1] == 2
+isFinished(game::Ledge) = !(2 in game.board)
 
 getOutcome(game::Ledge) = nothing
+
+function printGame(game::Ledge)
+    player = (length(game.executedMoves) % 2 + game.player) == 0 ? 2 : 1
+    coins = ["Copper", "Gold"]
+    try 
+        move = game.executedMoves[end]
+        if isFinished(game)
+            println("Player P$(player) wins")
+        else
+            println("P$(player) moves $(coins[move.type]) from $(move.from) to $(move.to): $(game.board)") 
+        end
+    catch Exception
+        println("Start board: $(game.board)")
+    end
+end
 
 
         
