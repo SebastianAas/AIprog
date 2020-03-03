@@ -6,7 +6,7 @@ include("NIM.jl")
 if gamePlayed == "NIM"
     game = NIM(startPieces, piecesToTake, startingPlayer)
 else
-    game = Ledge(startPosition)
+    game = Ledge(startPosition, startingPlayer)
 end
 
 struct GameSimulator
@@ -24,6 +24,9 @@ struct GameSimulator
 
     "To print the game or not"
     verbose::Bool
+
+    "Win statistics"
+    statistics::Dict
 end
 
 gameSimulator = GameSimulator(
@@ -35,7 +38,6 @@ gameSimulator = GameSimulator(
 )
 
 function main()
-    println("Hello world")
     while !isFinished(game)
         show(game)
         moves = getMoves(game)

@@ -21,6 +21,9 @@ struct Node
     "Parent of the node"
     parent::Node
 
+    "The game state of the Node"
+    state
+
     "The move taken from the parent to this node"
     move::Move
     
@@ -41,7 +44,7 @@ mutable struct MCTSTree
 end
 
 function initializeMCTSTree(depth::Int)::MCTSTree
-    root = creteNewNode(nothing, nothing)
+    root = createNewNode(nothing, nothing)
     return MCTSTree(root,depth)
 end
 
@@ -107,7 +110,7 @@ function selection(tree::MCTSTree,node::Node)::Node
 
     "Find the best child node / Find the best action"
     for child in parent.children
-        nodeValue = calculateNodeUCT(parent,child)
+        nodeValue = calculateUCT(parent,child)
         if  (nodeValue >= bestValue)
             bestNode = child
             bestNodeValue = nodeValue
@@ -125,7 +128,7 @@ Calculate Node value based on UCB (Upper Confidence Bound)
 
 """
 function calculateUCT(parent, child)
-    return child.score/child.visits + 2*sqrt(parent.visits/child.visits)
+    return child.score/child.visits + 2*sqrt(log(parent.visits)/child.visits)
 end
 
 
@@ -135,29 +138,35 @@ end
 
 Initialize new leaf node
 """
-function expansion!(tree::MCTSTree, node::Node)
+function expansion!(tree::MCTSTree, node::Node, solver::MCTSSolver)
 
     "Find all possible moves in the game"
-    possibleMoves = tree.game.getMoves()
+    possibleMoves = solver.game.getMoves()
     for move in possibleMoves
         child = createNewNode(node,move)
-        updateNodeChildren(node, child)
+        updateNodesChildren(node, child)
     end
 end    
 
 
 createNewNode(parent, move) = Node(parent,move,0,0,Node[])
-updateNodeChildren(node, child) = push!(node.children, child)
+updateNodesChildren(node, child) = push!(node.children, child)
 
 
 """
     evaluation(tree, node)
 
-Leaf evaluation: Rollout to a leaf node and calculate the score
+Leaf evaluation: Simulation/Rollout to a finished state and calculate the score
 """
-function evaluation(tree::MCTSTree, node::Node)
-    score = nothing
+function simulation(tree::MCTSTree, node::Node, solver::MCTSSolver)
+    while !isFinished(solver.game)
+        rolloutPolicy(node)
+    end
+    return getOutcome(solver.game)
 end
+
+rolloutPolicy(node::Node) = pickRandomMove(node)
+pickRandomMove(node::Node) = rand(node.children)
 
 
 

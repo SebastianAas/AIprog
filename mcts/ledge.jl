@@ -58,17 +58,22 @@ end
 "Checks if the gold coin is one the ledge"
 isFinished(game::Ledge) = !(2 in game.board)
 
+getCurrentPlayer(game::Ledge) = (length(game.executedMoves) % 2) == 0 ? oppositePlayer(game.player) : game.player
 getOutcome(game::Ledge) = nothing
+oppositePlayer(player::Int) = player == 1 ? 2 : 1
 
-function printGame(game::Ledge)
-    player = (length(game.executedMoves) % 2 + game.player) == 0 ? 2 : 1
+function Base.show(game::Ledge)
+    player = getCurrentPlayer(game)
     coins = ["Copper", "Gold"]
     try 
-        move = game.executedMoves[end]
+        move = game.executedMoves[end]            
+        if move.to == -1 
+                println("P$(player) picks up $(coins[move.type])")
+            else
+                println("P$(player) moves $(coins[move.type]) from $(move.from) to $(move.to): $(game.board)") 
+            end
         if isFinished(game)
             println("Player P$(player) wins")
-        else
-            println("P$(player) moves $(coins[move.type]) from $(move.from) to $(move.to): $(game.board)") 
         end
     catch Exception
         println("Start board: $(game.board)")
