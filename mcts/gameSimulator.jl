@@ -3,12 +3,6 @@ include("config.jl")
 include("ledge.jl")
 include("NIM.jl")
 
-if gamePlayed == "NIM"
-    game = NIM(startPieces, piecesToTake, startingPlayer)
-else
-    game = Ledge(startPosition, startingPlayer)
-end
-
 struct GameSimulator
     "Number of games in a batch"
     G::Int
@@ -26,7 +20,18 @@ struct GameSimulator
     verbose::Bool
 
     "Win statistics"
-    statistics::Dict
+    #statistics::Dict
+end
+
+
+
+function createGame(game::String, startingPlayerOption::Int)
+	startingPlayer = if startingPlayerOption === 3 ? rand(2) : startingPlayerOption
+	if gamePlayed == "NIM"
+		game = NIM(startPieces, piecesToTake, startingPlayer)
+	else
+		game = Ledge(startPosition, startingPlayer)
+	end
 end
 
 gameSimulator = GameSimulator(
@@ -37,11 +42,15 @@ gameSimulator = GameSimulator(
     true
 )
 
+solver = MCTSSolver(game, numberOfIterations, numberOfRollouts, exploration)
+
 function main()
-    while !isFinished(game)
-        show(game)
-        moves = getMoves(game)
-        executeMove!(game,moves[1])
+	tree = initializeMCTSTree()
+	for i = (1:numberOfGamesInBatch)
+		game = createGame(gamePlayed, startingPlayerOption)
+		node = search(tree, solver)
+		if verbose ; show(game) end
+		executeMove!(node.move)
     end
     show(game)
 end

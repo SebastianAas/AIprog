@@ -16,7 +16,6 @@ struct MCTSSolver
     exploration::Float64
 end
 
-
 struct Node
     "Parent of the node"
     parent::Node
@@ -58,35 +57,11 @@ end
 Single MCTS search: Selection-Expansion-Evaluation-Backpropagation
 """
 function search(tree::MCTSTree, solver::MCTSSolver)
-    iterations = 0
-    while solver.iterations > iterations 
-
-        "Selection"
         node = selection(tree, tree.root)
-
-        if isFinished(solver.game)
-            return getOutcome(solver.game)
-        end
-
-        if isLeafNode(node)
-            return getOutcome(solver.game)
-        end
-
-
-        "Expansion"
         expansion!(tree,node)
-
-        "Evaluation"
         score = evaluation(tree,node)
-
-        "Backpropagation"
         backpropagation!(tree,node,score)
-
-        iterations += 1
-    end
-
 end
-
 
 """
     selection(tree, node)
@@ -116,22 +91,14 @@ function selection(tree::MCTSTree,node::Node)::Node
             bestNodeValue = nodeValue
         end
     end
-
-    return bestNode 
+    return bestNode
 end   
 
 isLeafNode(node) = length(node.children) == 0
 notExplored(node) = node.visits == 0
 
-"""
-Calculate Node value based on UCB (Upper Confidence Bound)
-
-"""
-function calculateUCT(parent, child)
-    return child.score/child.visits + 2*sqrt(log(parent.visits)/child.visits)
-end
-
-
+"Calculate Node value based on UCB (Upper Confidence Bound)"
+calculateUCT(parent, child) = child.score / child.visits + 2 * sqrt(log(parent.visits) / child.visits)
 
 """
     expansion(tree, node)
@@ -160,33 +127,23 @@ Leaf evaluation: Simulation/Rollout to a finished state and calculate the score
 """
 function simulation(tree::MCTSTree, node::Node, solver::MCTSSolver)
     while !isFinished(solver.game)
-        rolloutPolicy(node)
+        node = rolloutPolicy(node)
+        solve.game.executeMove!(node.move)
     end
-    return getOutcome(solver.game)
+    return getResult(node)
 end
 
 rolloutPolicy(node::Node) = pickRandomMove(node)
 pickRandomMove(node::Node) = rand(node.children)
 
-
-
-function backpropagation!(tree::MCTSTree, node::Node, score)
-    if isFinished(tree.game)
-        score = getScore(tree.game)
-        updateNodeScore(node, score)
-        updateNodeVisits(node)
-        backpropagation!(getParent(node), -score)
-    else
-        updateNodeScore += score
-        updateNodeVisits(node)
-
-        if getParent(node) != nothing
-
-        end
+function backpropagation!(node::Node, score::Int)
+    updateNodeScore(node, score)
+    updateNodeVisits(node)
+    if getParent(node) != nothing
+        backpropagation!(node.parent, -score)
     end
 end
 
 updateNodeVisits(node) = node.visits += 1
 updateNodeScore(node, score) = node.sum += score 
 getParent(node) = node.parent
-

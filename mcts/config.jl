@@ -5,7 +5,7 @@ global numberOfGamesInBatch = 10
 global gamePlayed = "NIM"
 global numberOfRollouts = 10
 global verbose = true
-global startingPlayer = 1
+global startingPlayerOption = 1
 
 
 "Config for MCTS solver"
