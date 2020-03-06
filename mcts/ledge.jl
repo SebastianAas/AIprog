@@ -57,10 +57,11 @@ end
 
 "Checks if the gold coin is one the ledge"
 isFinished(game::Ledge) = !(2 in game.board)
+getState(game::Ledge) = game.board
 
-getCurrentPlayer(game::Ledge) = (length(game.executedMoves) % 2) == 0 ? oppositePlayer(game.player) : game.player
-getOutcome(game::Ledge) = nothing
-oppositePlayer(player::Int) = player == 1 ? 2 : 1
+function setState(game::Ledge, state::Array{Int})
+	game.board = state
+end
 
 function Base.show(game::Ledge)
     player = getCurrentPlayer(game)

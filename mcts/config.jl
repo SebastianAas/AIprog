@@ -1,15 +1,15 @@
 
 "Config file for Game Simulator"
 
-global numberOfGamesInBatch = 10
-global gamePlayed = "NIM"
+global numberOfGamesInBatch = 1
+global gameType = "NIM"
 global numberOfRollouts = 10
 global verbose = true
-global startingPlayer = 1
+global startingPlayerOption = 2
 
 
 "Config for MCTS solver"
-global numberOfIterations = 100
+global numberOfIterations = 1
 global exploration = 0.5
 
 

@@ -3,12 +3,6 @@ include("config.jl")
 include("ledge.jl")
 include("NIM.jl")
 
-if gamePlayed == "NIM"
-    game = NIM(startPieces, piecesToTake, startingPlayer)
-else
-    game = Ledge(startPosition, startingPlayer)
-end
-
 struct GameSimulator
     "Number of games in a batch"
     G::Int
@@ -20,30 +14,55 @@ struct GameSimulator
 	P::Int
 
     "The game played; either NIM or Ledge"
-    game::Game
+    gameType::String
 
     "To print the game or not"
     verbose::Bool
 
     "Win statistics"
-    statistics::Dict
+    #statistics::Dict
+end
+
+
+
+function createGame(game::String, startingPlayerOption::Int)
+	startingPlayer = startingPlayerOption === 3 ? rand(2) : startingPlayerOption
+	if game == "NIM"
+		return NIM(startPieces, piecesToTake, startingPlayer)
+	else
+		return Ledge(startPosition, startingPlayer)
+	end
 end
 
 gameSimulator = GameSimulator(
     numberOfGamesInBatch, 
     numberOfRollouts, 
-    startingPlayer,
-    game,
+    startingPlayerOption,
+    gameType,
     true
 )
 
+
 function main()
-    while !isFinished(game)
-        show(game)
-        moves = getMoves(game)
-        executeMove!(game,moves[1])
+	game = createGame(gameType, startingPlayerOption)
+	root = createNewNode(nothing, nothing, game)
+	tree = Dict()
+	node = root
+	for i = (1:numberOfGamesInBatch)
+		while !isFinished(root.game)
+			printTree(root)
+			node = search(root)
+			println(node.move)
+		end
+	#	while !isFinished(game)
+	#		node = search(node)
+	#		printTree(tree.root)
+	#		if verbose ; show(game) end
+	#		executeMove!(game, node.move)
+	#	end
+	#	if verbose; show(game) end
+	#	game = createGame(gameType, startingPlayerOption)
     end
-    show(game)
 end
 
 main()

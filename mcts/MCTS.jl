@@ -2,7 +2,7 @@ include("game.jl")
 include("NIM.jl")
 include("ledge.jl")
 
-struct MCTSSolver
+mutable struct MCTSSolver
     "The game being played"
     game::Game
 
@@ -14,18 +14,18 @@ struct MCTSSolver
 
     "Specify how much the solver should explore"
     exploration::Float64
+
 end
 
-
-struct Node
+mutable struct Node
     "Parent of the node"
-    parent::Node
-
-    "The game state of the Node"
-    state
+    parent
 
     "The move taken from the parent to this node"
-    move::Move
+    move
+
+    "The state of the game"
+    game::Game
     
     "The score of the node"
     score::Int
@@ -35,121 +35,134 @@ struct Node
 
     "The children of this node"
     children::Array{Node}
+
+    "Expanded"
+    expanded::Bool
+
 end
 
 mutable struct MCTSTree
     "The root node of the tree"
     root::Node
+
+    "Game being played"
+    game::Game
+
+    "Maximum depth of the tree"
     depth::Int
+
+    "Number of search iterations"
+    iterations::Int
 end
 
-function initializeMCTSTree(depth::Int)::MCTSTree
-    root = createNewNode(nothing, nothing)
-    return MCTSTree(root,depth)
+function initializeMCTSTree(game::Game, iterations::Int)::MCTSTree
+    root = createNewNode(nothing, nothing, game)
+    return MCTSTree(root, game, 0, iterations)
 end
 
-function resetSearch(tree::MCTSTree)
+function resetSearch!(tree::MCTSTree)
     tree.root = createNewNode(nothing, nothing)
 end
 
 """
     search(tree,solver)
 
-Single MCTS search: Selection-Expansion-Evaluation-Backpropagation
+MCTS search: Selection-Expansion-Evaluation-Backpropagation
 """
-function search(tree::MCTSTree, solver::MCTSSolver)
+function search(root::Node)
     iterations = 0
-    while solver.iterations > iterations 
-
-        "Selection"
-        node = selection(tree, tree.root)
-
-        if isFinished(solver.game)
-            return getOutcome(solver.game)
-        end
-
-        if isLeafNode(node)
-            return getOutcome(solver.game)
-        end
-
-
-        "Expansion"
-        expansion!(tree,node)
-
-        "Evaluation"
-        score = evaluation(tree,node)
-
-        "Backpropagation"
-        backpropagation!(tree,node,score)
-
+    while 10 > iterations
+        println("iteration ", iterations)
+        printTree(root)
+        node = selection(root)
+        if !(node.expanded); expansion!(node) end
+        score = simulation(node)
+        backpropagation!(node, score)
         iterations += 1
     end
-
+    return selectBestChild(root)
 end
-
 
 """
     selection(tree, node)
 
 Finds a node that haven't been explored
 """
-function selection(tree::MCTSTree,node::Node)::Node
+function selection(node::Node)::Node
 
-    "Check if the node has not been seen before"
-    if notExplored(node)
-        return node
-    end
+    currentNode = node
+    println("CurrentNode: ", currentNode.move)
 
-    "Check if the state is final"
-    if isLeafNode(node)
-        return node
+    while !isTerminalNode(currentNode)
+
+        if isLeafNode(currentNode)
+            println("Current node ", currentNode.move)
+            println(isTerminalNode(currentNode))
+            return currentNode
+        else
+            println("Not leaf")
+            println("node: ", currentNode.move)
+            println("Numer of children ", length(currentNode.children))
+            printChildren(currentNode)
+            currentNode = selectBestChild(currentNode)
+        end
     end
+    return currentNode
+end
+
+function printChildren(node::Node)
+    for (i,child) in enumerate(node.children)
+        println("child $i: ", child.move, " Score: ", child.score)
+    end
+end
+
+isLeafNode(node::Node) = length(node.children) == 0
+isTerminalNode(node::Node) = isFinished(node.game)
+notExplored(node::Node) = node.visits == 0
+
+function selectBestChild(node::Node)
 
     bestNode = nothing
-    bestValue = nothing
+    bestValue = -Inf
 
     "Find the best child node / Find the best action"
-    for child in parent.children
-        nodeValue = calculateUCT(parent,child)
+    for child in node.children
+        nodeValue = calculateUCT(node,child)
         if  (nodeValue >= bestValue)
             bestNode = child
             bestNodeValue = nodeValue
         end
     end
-
-    return bestNode 
-end   
-
-isLeafNode(node) = length(node.children) == 0
-notExplored(node) = node.visits == 0
-
-"""
-Calculate Node value based on UCB (Upper Confidence Bound)
-
-"""
-function calculateUCT(parent, child)
-    return child.score/child.visits + 2*sqrt(log(parent.visits)/child.visits)
+    return bestNode
 end
 
-
+"Calculate Node value based on UCB (Upper Confidence Bound)"
+function calculateUCT(parent, child)
+    UCT = 2 * sqrt(log(parent.visits) / max(child.visits,1))
+    return child.score / max(child.visits,1) + UCT
+end
 
 """
     expansion(tree, node)
 
 Initialize new leaf node
 """
-function expansion!(tree::MCTSTree, node::Node, solver::MCTSSolver)
+function expansion!(node::Node)
+
+    node.expanded = true
 
     "Find all possible moves in the game"
-    possibleMoves = solver.game.getMoves()
+    possibleMoves = getMoves(node.game)
     for move in possibleMoves
-        child = createNewNode(node,move)
+        gameState = deepcopy(node.game)
+        executeMove!(gameState, move)
+        child = createNewNode(node, move, gameState)
         updateNodesChildren(node, child)
     end
 end    
 
 
-createNewNode(parent, move) = Node(parent,move,0,0,Node[])
+createNewNode(parent, move, game) = Node(parent, move, game, 0, 0, Node[], false)
 updateNodesChildren(node, child) = push!(node.children, child)
 
 
@@ -158,35 +171,43 @@ updateNodesChildren(node, child) = push!(node.children, child)
 
 Leaf evaluation: Simulation/Rollout to a finished state and calculate the score
 """
-function simulation(tree::MCTSTree, node::Node, solver::MCTSSolver)
-    while !isFinished(solver.game)
-        rolloutPolicy(node)
+function simulation(node::Node)
+    game = deepcopy(node.game)
+    player = getCurrentPlayer(game)
+    iterations = 0
+    while !isFinished(game)
+        possibleMoves = getMoves(game)
+        move = rolloutPolicy(possibleMoves)
+        executeMove!(game, move)
+        iterations += 1
     end
-    return getOutcome(solver.game)
+    return getResult(game, player)
 end
 
-rolloutPolicy(node::Node) = pickRandomMove(node)
-pickRandomMove(node::Node) = rand(node.children)
+rolloutPolicy(possibleMoves) = pickRandomMove(possibleMoves)
+pickRandomMove(possibleMoves) = rand(possibleMoves)
 
-
-
-function backpropagation!(tree::MCTSTree, node::Node, score)
-    if isFinished(tree.game)
-        score = getScore(tree.game)
-        updateNodeScore(node, score)
-        updateNodeVisits(node)
-        backpropagation!(getParent(node), -score)
-    else
-        updateNodeScore += score
-        updateNodeVisits(node)
-
-        if getParent(node) != nothing
-
-        end
+function backpropagation!(node::Node, score::Int)
+    updateNodeScore(node, score)
+    updateNodeVisits(node)
+    if getParent(node) != nothing
+        backpropagation!(node.parent, -score)
     end
 end
 
 updateNodeVisits(node) = node.visits += 1
-updateNodeScore(node, score) = node.sum += score 
+updateNodeScore(node, score) = node.score += score
 getParent(node) = node.parent
+
+
+function printTree(node::Node, prefix="", last=true)
+    output = last ? "`- " : "|- "
+    println(prefix, output, node.move)
+    prefix = string(prefix, last ? "   " : "|  ")
+    for child in node.children
+        last = child == node.children[end]
+        printTree(child, prefix, last)
+    end
+end
+
 

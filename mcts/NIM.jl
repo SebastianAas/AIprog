@@ -36,16 +36,13 @@ function executeMove!(game::NIM, move::Move)
 	push!(game.executedMoves, move)
 end
 
-function getOutcome(game::Game)::Int
-	player = length(game.executedMoves % 2)
-	if isFinished(game)
-		return nothing
-	end
-end
+isFinished(game::NIM) = game.N <= 0
+getState(game::NIM) = (game.N, game.K)
 
-oppositePlayer(player::Int) = player == 1 ? 2 : 1
-getCurrentPlayer(game::NIM) = (length(game.executedMoves) % 2) == 0 ? oppositePlayer(game.player) : game.player
-isFinished(game::NIM) = game.N == 0
+function setState(game::NIM, state::Tuple{Int,Int})
+	game.N = state[1]
+	game.K = state[2]
+end
 
 function Base.show(game::NIM)
 	player = getCurrentPlayer(game)
