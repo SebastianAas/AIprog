@@ -1,7 +1,7 @@
 
 "Config file for Game Simulator"
 
-global numberOfGamesInBatch = 1
+global numberOfGamesInBatch = 50
 global gameType = "NIM"
 global numberOfRollouts = 10
 global verbose = true

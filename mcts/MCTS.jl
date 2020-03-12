@@ -159,8 +159,7 @@ function expansion!(node::Node)
         child = createNewNode(node, move, gameState)
         updateNodesChildren(node, child)
     end
-end    
-
+end 
 
 createNewNode(parent, move, game) = Node(parent, move, game, 0, 0, Node[], false)
 updateNodesChildren(node, child) = push!(node.children, child)

@@ -8,7 +8,7 @@ mutable struct NIM <: Game
 	K::Int
 
 	"Starting player"
-	player::Int
+	startingPlayer::Int
 
 	"Executed moves in the game"	
 	executedMoves::Array{Move}

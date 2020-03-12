@@ -24,59 +24,69 @@ mutable struct Node
 end
 
 mutable struct Tree
+    "Root node"
     root::Node
-    nodes::Dict{Node}
+
+    "Nodes in tree"
+    nodes::Array{Node}
 end
 
-function uctSearch(tree::Tree, node::Node)
+function uctSearch(tree::Tree, node::Node)::Node
     game = node.game
     iterations = 0
-    numIteration = 10
+    numIteration = 100
     while numIteration > iterations
         simulate(tree, node)
+        iterations += 1
     end
-    return selectMove(node)
+    return selectMove(node, 0)
 end
 
 function simulate(tree::Tree, node::Node)
     node = simTree(tree, node)
-    score = simDefault(node)
-    backup(node,score)
+    score = simDefault(deepcopy(node.game))
+    backup!(node,score)
 end
 
-function simTree(tree::Tree, node::Node)
+function simTree(tree::Tree, node::Node)::Node
     c = 0.5 #Exploration constant
     t = 0
     game = deepcopy(node.game)
     while !isFinished(game) 
         if !(node in tree.nodes)
-            newNode(node)
+            newNode(tree,node)
             return node
         end
-        move = selectMove(node,c)
-        executeMove!(game, move)
+        node = selectMove(node,c)
+        executeMove!(game, node.move)
         t += 1
     end
     return node
 end
 
-function simDefault(board)
+"Rollout"
+function simDefault(game)::Int
     while !isFinished(game)
-        a = defaultPolicy(game)
-        executeMove!(a)
+        possibleMoves = getMoves(game)
+        a = defaultPolicy(possibleMoves)
+        executeMove!(game, a)
     end
     return getResult(game)
 end
 
-function selectMove(node::Node, c)
+defaultPolicy(possibleMoves) = pickRandomMove(possibleMoves)
+pickRandomMove(possibleMoves) = rand(possibleMoves)
+
+function selectMove(node::Node, c)::Node
+    game = node.game
     player = getCurrentPlayer(game)
     childValues = map(child -> child.score, node.children)
-    if player == startingPlayer
+    if player == game.startingPlayer
         index = argmax(childValues)
     else 
         index = argmin(childValues)
     end
-    return node.children[index].move
+    return node.children[index]
 end
 
 function backup!(node::Node, score)
@@ -87,11 +97,14 @@ function backup!(node::Node, score)
     end
 end
 
-function newNode(tree, node::Node)
-    game = node.game
-    possibleMoves = getMoves(game)
+function newNode(tree::Tree, node::Node)
+    push!(tree.nodes, node)
+    possibleMoves = getMoves(node.game)
     for move in possibleMoves
-        createNewNode(parent, move, game)
+        game = deepcopy(node.game)
+        executeMove!(game, move)
+        n = createNewNode(node, move, game)
+        push!(node.children, n)
     end
 end
 

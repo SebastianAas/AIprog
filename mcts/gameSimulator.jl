@@ -1,4 +1,4 @@
-include("MCTS.jl")
+include("uctSearch.jl")
 include("config.jl")
 include("ledge.jl")
 include("NIM.jl")
@@ -20,7 +20,7 @@ struct GameSimulator
     verbose::Bool
 
     "Win statistics"
-    #statistics::Dict
+    statistics::Dict{Int,Int}
 end
 
 
@@ -39,30 +39,33 @@ gameSimulator = GameSimulator(
     numberOfRollouts, 
     startingPlayerOption,
     gameType,
-    true
+	true,
+	Dict()
 )
 
 
 function main()
 	game = createGame(gameType, startingPlayerOption)
 	root = createNewNode(nothing, nothing, game)
-	tree = Dict()
+	tree = Tree(root, [])
 	node = root
 	for i = (1:numberOfGamesInBatch)
-		while !isFinished(root.game)
-			printTree(root)
-			node = search(root)
-			println(node.move)
+		while !isFinished(game)
+			node = uctSearch(tree,node)
+			if verbose ; show(game) end
+			executeMove!(game, node.move)
 		end
-	#	while !isFinished(game)
-	#		node = search(node)
-	#		printTree(tree.root)
-	#		if verbose ; show(game) end
-	#		executeMove!(game, node.move)
-	#	end
-	#	if verbose; show(game) end
-	#	game = createGame(gameType, startingPlayerOption)
-    end
+		if verbose; show(game) end
+		player = getCurrentPlayer(game)
+		if haskey(gameSimulator.statistics, player) 
+			gameSimulator.statistics[player] += 1
+		else 
+			gameSimulator.statistics[player] = 1
+		end
+		game = createGame(gameType, startingPlayerOption)
+		node = tree.root
+	end
+	println(gameSimulator.statistics)
 end
 
 main()
