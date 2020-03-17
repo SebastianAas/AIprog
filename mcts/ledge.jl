@@ -9,7 +9,7 @@ mutable struct Ledge <: Game
     executedMoves::Array{Move}
 
     "Starting player"
-    player::Int
+    startingPlayer::Int
 
     function Ledge(board::Array{Int}, player)
         if 2 in board
@@ -59,12 +59,8 @@ end
 isFinished(game::Ledge) = !(2 in game.board)
 getState(game::Ledge) = game.board
 
-function setState(game::Ledge, state::Array{Int})
-	game.board = state
-end
-
 function Base.show(game::Ledge)
-    player = getCurrentPlayer(game)
+    player = oppositePlayer(getCurrentPlayer(game))
     coins = ["Copper", "Gold"]
     try 
         move = game.executedMoves[end]            

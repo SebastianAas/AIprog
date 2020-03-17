@@ -1,3 +1,4 @@
+using ProgressMeter
 include("uctSearch.jl")
 include("config.jl")
 include("ledge.jl")
@@ -25,14 +26,55 @@ end
 
 
 
-function createGame(game::String, startingPlayerOption::Int)
-	startingPlayer = startingPlayerOption === 3 ? rand(2) : startingPlayerOption
+function createGame(game::String, startingPlayerOption::Int)::Game
+	startingPlayer = startingPlayerOption === 3 ? rand(1:2) : startingPlayerOption
 	if game == "NIM"
 		return NIM(startPieces, piecesToTake, startingPlayer)
 	else
-		return Ledge(startPosition, startingPlayer)
+		return Ledge(deepcopy(startPosition), startingPlayer)
 	end
 end
+
+function initTree(gameType::String, startingPlayerOption::Int)::Tuple{Tree,Game}
+	game = createGame(gameType, startingPlayerOption)
+	tree = newTree(game)
+	return tree, game
+end
+
+function main(gameSim::GameSimulator)
+	if !verbose ; prog = Progress(gameSim.G,1) end
+	tree, game = initTree(gameSim.gameType, gameSim.P)
+	for i = (1:gameSim.G)
+		node = tree.root
+		if verbose ; show(game) end
+		while !isFinished(game)
+			node = uctSearch(tree,node)
+			executeMove!(game, node.move)
+			if verbose ; show(game) end
+		end
+		winner = getPreviousPlayer(game)
+		tree, game = initTree(gameSim.gameType, gameSim.P)
+		updateStatistics!(gameSim.statistics, winner)
+		if !verbose ; next!(prog) end
+	end
+	printStatistics!(gameSim.statistics)
+end
+
+function updateStatistics!(stats::Dict, winner)
+	if haskey(stats, winner) 
+		stats[winner] += 1
+	else 
+		stats[winner] = 1
+	end
+end
+
+function printStatistics!(stats::Dict)
+	mostWins = argmax(stats)
+	playedGames = sum([stats[key] for key in keys(stats)])
+	winPercentage = round((stats[mostWins]/playedGames * 100),digits=2)
+	println("Player $(mostWins) wins $(stats[mostWins]) of $playedGames games ($winPercentage %) ")
+end
+
 
 gameSimulator = GameSimulator(
     numberOfGamesInBatch, 
@@ -44,31 +86,7 @@ gameSimulator = GameSimulator(
 )
 
 
-function main()
-	game = createGame(gameType, startingPlayerOption)
-	root = createNewNode(nothing, nothing, game)
-	tree = Tree(root, [])
-	node = root
-	for i = (1:numberOfGamesInBatch)
-		while !isFinished(game)
-			node = uctSearch(tree,node)
-			if verbose ; show(game) end
-			executeMove!(game, node.move)
-		end
-		if verbose; show(game) end
-		player = getCurrentPlayer(game)
-		if haskey(gameSimulator.statistics, player) 
-			gameSimulator.statistics[player] += 1
-		else 
-			gameSimulator.statistics[player] = 1
-		end
-		game = createGame(gameType, startingPlayerOption)
-		node = tree.root
-	end
-	println(gameSimulator.statistics)
-end
-
-main()
+main(gameSimulator)
     
 
 

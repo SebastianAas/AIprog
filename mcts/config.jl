@@ -1,16 +1,12 @@
 
 "Config file for Game Simulator"
 
-global numberOfGamesInBatch = 50
-global gameType = "NIM"
-global numberOfRollouts = 10
+global numberOfGamesInBatch = 10
+global gameType = "Ledge"
+global numberOfRollouts = 500
 global verbose = true
 global startingPlayerOption = 2
-
-
-"Config for MCTS solver"
-global numberOfIterations = 1
-global exploration = 0.5
+global exploration = 1.0
 
 
 "Config for NIM"
@@ -19,7 +15,7 @@ global piecesToTake = 3
 
 
 "Config for Ledge"
-global startPosition = [1,2,0,0,0,1,0]
+global startPosition = [1,1,0,0,2,1,0]
 
 
 

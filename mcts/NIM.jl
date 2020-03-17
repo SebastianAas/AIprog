@@ -36,16 +36,11 @@ function executeMove!(game::NIM, move::Move)
 	push!(game.executedMoves, move)
 end
 
-isFinished(game::NIM) = game.N <= 0
-getState(game::NIM) = (game.N, game.K)
-
-function setState(game::NIM, state::Tuple{Int,Int})
-	game.N = state[1]
-	game.K = state[2]
-end
+isFinished(game::NIM)::Bool = game.N <= 0
+getState(game::NIM)::Tuple{Int,Int} = (game.N, game.K)
 
 function Base.show(game::NIM)
-	player = getCurrentPlayer(game)
+	player = oppositePlayer(getCurrentPlayer(game))
 	try  
 		move = game.executedMoves[end]
 		println("Player $(player) selects $(move.removedPieces): Remaining stones = $(game.N)")
@@ -55,6 +50,6 @@ function Base.show(game::NIM)
 		end
 	end
 	if isFinished(game)
-		println("Player  $(player) wins")
+		println("Player $(player) wins")
 	end
 end
