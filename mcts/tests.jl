@@ -18,6 +18,6 @@ end
 @testset "Test for NIM game" begin
     nim = NIM(100, 10)
     @test length(getMoves(nim)) == 10
-    nim = NIM(4,6)
-    @test length(getMoves(nim)) == 3
+    nim = NIM(6,4)
+    @test length(getMoves(nim)) == 4
 end
