@@ -14,14 +14,12 @@ but in the end I managed to get good results with the agent.
 
 One of the difficulties with Julia, is the long start-up time for loading the packages. It can be improved by using a Jupyter Notebook, as you don't need to load in all the packages everytime you run the code. 
 
-![alt-text](https://github.com/SebastianAas/AIprog/blob/master/assignment1/animations/animation.gif)
+![Actor-Critic agent playing Peg Solitaire](https://github.com/SebastianAas/AIprog/blob/master/assignment1/animations/animation.gif)
 
 ## Assignment 2
 The goal of this assignment was to create a Monte-Carlo Tree Search reinforcement learning agent, which could play the game of Hex.
 
-
-![alt-text](https://github.com/SebastianAas/AIprog/blob/master/src/animations/animation.gif)
-
 ## Assignment 3
 This assignment was a continuation of assignment 2, but instead of only using Monte-Carlo Tree Search, it was implemented neural networks for simulating the rollout. 
 
+![MCTS agent playing Hex](https://github.com/SebastianAas/AIprog/blob/master/assignment3/animations/hex.gif)
